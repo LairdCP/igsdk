@@ -1,0 +1,164 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters" : {
+      "AuthUsernameParam" : {
+         "Type" : "String",
+        "MinLength" : 6,
+        "Description" : "Username for basic authentication (min 6 characters)"
+      },
+      "AuthPasswordParam" : {
+        "Type" : "String",
+        "MinLength" : 6,
+        "NoEcho" : true,
+        "Description" : "Password for basic authentication (min 6 characters)"
+      }
+    },
+    "Resources": {
+        "CloudFrontOriginAccessIdentity": {
+            "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+            "Properties": {
+                "CloudFrontOriginAccessIdentityConfig": {
+                    "Comment" : "CloudFront Origin Access Identity for S3"
+                }
+            }
+        },
+        "S3Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "Private"
+            }
+        },
+        "BucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Id": "MyPolicy",
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "CloudFrontReadAccess",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "CanonicalUser" : { "Fn::GetAtt" : [ "CloudFrontOriginAccessIdentity", "S3CanonicalUserId" ] }
+                            },
+                            "Action": "s3:GetObject",
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:s3:::",
+                                        {
+                                            "Ref": "S3Bucket"
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "Bucket": {
+                    "Ref": "S3Bucket"
+                }
+            }
+        },
+        "BasicAuthLambdaExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [{ "Effect": "Allow", "Principal": {"Service": ["lambda.amazonaws.com", "edgelambda.amazonaws.com"]}, "Action": ["sts:AssumeRole"] }]
+                },
+                "Path": "/",
+                "Policies": [{
+                    "PolicyName": "root",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [{ "Effect": "Allow", "Action": ["logs:*"], "Resource": "arn:aws:logs:*:*:*" }]
+                    }
+                }]
+            }
+        },
+        "BasicAuthEdgeLambda": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Handler": "index.handler",
+                "Role": { "Fn::GetAtt" : ["BasicAuthLambdaExecutionRole", "Arn"] },
+                "Code": {
+                    "ZipFile":  { "Fn::Join": ["", [
+                        "exports.handler = (event, context, callback) => {",
+                            "const request = event.Records[0].cf.request;",
+                            "const headers = request.headers;",
+                            "const authUser = '", { "Ref" : "AuthUsernameParam" }, "';",
+                            "const authPass = '", { "Ref" : "AuthPasswordParam" }, "';",
+                            "const authString = 'Basic ' + new Buffer(authUser + ':' + authPass).toString('base64');",
+                            "if (typeof headers.authorization == 'undefined' || headers.authorization[0].value != authString) {",
+                                "const body = 'Unauthorized';",
+                                "const response = {",
+                                    "status: '401',",
+                                    "statusDescription: 'Unauthorized',",
+                                    "body: body,",
+                                    "headers: {",
+                                        "'www-authenticate': [{key: 'WWW-Authenticate', value:'Basic'}]",
+                                    "},",
+                                "};",
+                                "callback(null, response);",
+                            "}",
+                            "callback(null, request);",
+                        "};"
+                    ]]}
+                },
+                "Runtime": "nodejs8.10"
+            }
+        },
+        "BasicAuthEdgeLambdaVersion" : {
+            "Type": "AWS::Lambda::Version",
+            "Properties": {
+                "FunctionName": { "Fn::GetAtt": [ "BasicAuthEdgeLambda", "Arn" ] },
+            }
+        },
+        "CloudFrontDistribution" : {
+            "Type" : "AWS::CloudFront::Distribution",
+            "Properties" : {
+                "DistributionConfig" : {
+                    "Origins" : [ {
+                        "DomainName" : { "Fn::GetAtt" : [ "S3Bucket", "DomainName" ] },
+                        "Id" : "theS3Origin",
+                        "S3OriginConfig" : {
+                            "OriginAccessIdentity" : { "Fn::Join" : [ "", [ "origin-access-identity/cloudfront/", { "Ref" : "CloudFrontOriginAccessIdentity" } ] ] }
+                        }
+                    }],
+                    "Enabled" : "true",
+                    "DefaultCacheBehavior" : {
+                        "AllowedMethods" : [ "GET", "HEAD" ],  
+                        "TargetOriginId" : "theS3Origin",
+                        "ForwardedValues" : {
+                            "QueryString" : "false",
+                            "Cookies" : { "Forward" : "none" }
+                        },
+                        "ViewerProtocolPolicy" : "redirect-to-https",
+                        "LambdaFunctionAssociations" : [
+                            {
+                                "EventType": "viewer-request",
+                                "LambdaFunctionARN": { "Ref": "BasicAuthEdgeLambdaVersion" }
+                            }
+                        ]
+                    },
+                   "PriceClass" : "PriceClass_100",
+                   "ViewerCertificate" : { "CloudFrontDefaultCertificate" : "true" }  
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "DomainName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "CloudFrontDistribution",
+                    "DomainName"
+                ]
+            },
+            "Description": "CloudFront Provisioning Domain Name"
+        }
+    }
+}
