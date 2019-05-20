@@ -159,7 +159,7 @@ class ModbusSlave(threading.Thread):
             delta = write_bits(state, addr, new_data, nbits)
             if delta:
                 self.set_write_state(key, delta)
-                return req_data
+                return req_data[:4]
 
     def handle_request(self, req):
         """Handle a single Modbus message request message; returns a response Modbus message.
