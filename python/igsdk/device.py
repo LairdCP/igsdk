@@ -173,6 +173,11 @@ class DeviceMgr(threading.Thread):
         """
         return self.dev_props.GetAll(DEVICE_SERVICE_PUBLIC_IFACE)
 
+    def Reboot(self):
+        """Reboot
+        """
+        return self.dev.Reboot()
+
 def device_init(cb_ext_storage_available = None):
     """Initialize the IG device API
     Returns:
@@ -246,3 +251,9 @@ def get_storage_status(dev):
         return dev.get_storage_status()
     else:
         return None
+
+def reboot(dev):
+    """Reboot
+    """
+    if dev:
+        dev.Reboot()
