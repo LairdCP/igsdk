@@ -37,7 +37,7 @@ DEVICE_IFACE='org.bluez.Device1'
 
 def discovery_callback(path, interfaces):
 	""" A callback that receives data about peripherals discovered by the bluetooth manager
-	
+
 	The data on each device is packaged as JSON and published to the cloud on the 
 	'ble/discovery' topic
 	"""
@@ -54,9 +54,9 @@ def discovery_callback(path, interfaces):
 def function_handler(event, context):
 	# Extract the command
 	command = event['command']
-	
+
 	logging.info('Received BLE trigger event. Command: {}'.format(command))
-	
+
 	if command == 'Start_Discovery':
 		bt_start_discovery(bt)
 	elif command == 'Stop_Discovery':
@@ -83,7 +83,7 @@ def function_handler(event, context):
 		client.publish(topic=status_topic, payload=status)
 	else:
 		logging.error('BLE_Interface: Invalid command: {}'.format(command))
-	
+
 	return
 
 #
