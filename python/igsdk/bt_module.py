@@ -46,7 +46,7 @@ class BtMgr(threading.Thread):
 			gobject.threads_init()
 
 		# Get DBus objects
-		self.manager = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ, 
+		self.manager = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ,
 			"/"), DBUS_OBJ_MGR_IFACE)
 		self.adapter = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ,
 			BT_OBJ_PATH), BT_ADAPTER_IFACE)
@@ -117,7 +117,7 @@ class BtMgr(threading.Thread):
 		try:
 			device_path = self.FindDevice(address)
 			if device_path:
-				device = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ, 
+				device = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ,
 					device_path), BT_DEVICE_IFACE)
 				device.Connect()
 				success = True
@@ -138,7 +138,7 @@ class BtMgr(threading.Thread):
 		try:
 			device_path = self.FindDevice(address)
 			if device_path:
-				device = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ, 
+				device = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ,
 					device_path), BT_DEVICE_IFACE)
 				device.Disconnect()
 				success = True
@@ -160,7 +160,7 @@ class BtMgr(threading.Thread):
 		try:
 			device_path = self.FindDevice(address)
 			if device_path:
-				device_props = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ, 
+				device_props = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ,
 					device_path), DBUS_PROP_IFACE)
 
 				# Loop through the properties and save them off
