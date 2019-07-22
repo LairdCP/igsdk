@@ -53,7 +53,7 @@ class BtMgr(threading.Thread):
             gobject.threads_init()
 
         # Get DBus objects
-        self.manager = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ, 
+        self.manager = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ,
             "/"), DBUS_OBJ_MGR_IFACE)
         self.adapter = dbus.Interface(dbus.SystemBus().get_object(BT_OBJ,
             BT_OBJ_PATH), BT_ADAPTER_IFACE)
@@ -119,7 +119,7 @@ class BtMgr(threading.Thread):
 
     def find_characteristics(self, service_path):
         """
-        Returns an array of dictionaries containing the UUID and path for 
+        Returns an array of dictionaries containing the UUID and path for
         every characteristic associated with the given service
         """
         chars_array = []
@@ -377,7 +377,7 @@ class Device():
 
     def get_services(self):
         """
-        Returns a dictionary of dictionaries including each device's service 
+        Returns a dictionary of dictionaries including each device's service
         characteristic properties identified by the service UUID
         """
         services_dict = {}

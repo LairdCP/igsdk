@@ -46,10 +46,10 @@ result_err = -1
 DEVICE_IFACE='org.bluez.Device1'
 
 def discovery_callback(path, interfaces):
-	""" 
+	"""
 	A callback that receives data about peripherals discovered by the bluetooth manager
 
-	The data on each device is packaged as JSON and published to the cloud on the 
+	The data on each device is packaged as JSON and published to the cloud on the
 	'discovery' topic
 	"""
 	for interface in interfaces.keys():
@@ -58,7 +58,7 @@ def discovery_callback(path, interfaces):
 			properties = interfaces[interface]
 			for key in properties.keys():
 				if key in discovery_keys:
-					data[key] = properties[key] 
+					data[key] = properties[key]
 			data_json = json.dumps(data, separators=(',',':'), sort_keys=True, indent=4)
 			client.publish(topic=discovery_topic, payload=data_json)
 
