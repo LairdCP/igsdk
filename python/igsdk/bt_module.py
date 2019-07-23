@@ -9,7 +9,6 @@ import dbus.exceptions
 import threading
 import dbus.mainloop.glib
 import logging
-import exceptions
 import sys
 import json
 
@@ -258,7 +257,7 @@ class BtMgr(threading.Thread):
                     self.logger.error('Service UUID {} not found for device {}'.format(service_uuid, address))
             else:
                 self.logger.error('Device {} was not found'.format(address))
-        except (dbus.exceptions.DBusException, ValueError, TypeError) as e:
+        except (dbus.exceptions.DBusException) as e:
             self.logger.error('Failed to write device {} characteristic {}: {}'.format(address, char_uuid, e))
 
     def configure_characteristic_notification(self, address, service_uuid, char_uuid, enable):
