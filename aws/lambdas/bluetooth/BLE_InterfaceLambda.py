@@ -116,7 +116,11 @@ def function_handler(event, context):
 				if operation == 'Connect':
 					bt_connect(bt, address)
 				elif operation == 'Disconnect':
-					bt_disconnect(bt, address)
+					if 'purge' in event:
+						purge = event['purge']
+					else:
+						purge = False
+					bt_disconnect(bt, address, purge)
 				else:
 					logging.error('Unknown connect operation request: {}'.format(operation))
 			if len(topic_el) >= 4 and topic_el[2] == 'gatt' and topic_el[3] == 'req':

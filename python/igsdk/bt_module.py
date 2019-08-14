@@ -154,15 +154,19 @@ class BtMgr(threading.Thread):
         if not success:
             self.logger.error('Device {} was not found'.format(address))
 
-    def disconnect(self, address):
+    def disconnect(self, address, purge):
         """
         Disconnect from the bluetooth device at the designated address
+		then purge (if requested) from the adapter's discovered list
         """
         self.logger.info('Disconnecting from {}'.format(address))
 
         device = self.devices.get(address)
         if device is not None:
+			device_path = device.get_path()
             device.disconnect()
+			if purge:
+				self.adapter.RemoveDevice(device_path)
         else:
             self.logger.error('Device {} was not found'.format(address))
 
@@ -711,12 +715,12 @@ def bt_connect(bt, address):
     if bt:
         bt.connect(address)
 
-def bt_disconnect(bt, address):
+def bt_disconnect(bt, address, purge):
     """
     Disconnect from the bluetooth device at the designated address
     """
     if bt:
-        bt.disconnect(address)
+        bt.disconnect(address, purge)
 
 def bt_device_services(bt, address):
     """
