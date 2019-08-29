@@ -2,8 +2,8 @@
 # rtuparser.py
 #
 
-from baseparser import ModbusBaseParser
-from message import ModbusMessage
+from .baseparser import ModbusBaseParser
+from .message import ModbusMessage
 import logging
 import time
 import struct

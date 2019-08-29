@@ -1,10 +1,10 @@
 #
 # modbus_queue.py
 #
-from serial_queue import SerialQueue
-from message import ModbusMessage
-from asciiparser import ModbusASCIIParser
-from rtuparser import ModbusRTUParser
+from .serial_queue import SerialQueue
+from .message import ModbusMessage
+from .asciiparser import ModbusASCIIParser
+from .rtuparser import ModbusRTUParser
 from ..device import device_enabled, device_activity, device_exception
 import logging
 

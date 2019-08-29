@@ -3,9 +3,9 @@
 #
 
 import threading
-from message import ModbusMessage
-from modbus_queue import ModbusQueue
-from state_util import read_registers, read_bits, write_registers, write_bits, mask_write_register
+from .message import ModbusMessage
+from .modbus_queue import ModbusQueue
+from .state_util import read_registers, read_bits, write_registers, write_bits, mask_write_register
 import logging
 
 class ModbusSlave(threading.Thread):

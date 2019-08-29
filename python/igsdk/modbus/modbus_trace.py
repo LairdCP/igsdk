@@ -3,8 +3,8 @@
 #
 
 import threading
-from message import ModbusMessage
-from modbus_queue import ModbusQueue
+from .message import ModbusMessage
+from .modbus_queue import ModbusQueue
 import logging
 
 class ModbusTrace(threading.Thread):
