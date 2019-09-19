@@ -29,7 +29,8 @@ class FileMover(threading.Thread):
             if os.path.isfile(srcname):
                 dstname = self.dstpath + '/' + fname
                 self.logger.info('Moving {} -> {}'.format(srcname, dstname))
-                shutil.move(srcname, self.dstpath + '/' + fname)
+                shutil.copyfile(srcname, dstname)
+                os.remove(srcname)
         self.logger.info('File move complete.')
 
 class ManagedFile():
@@ -103,7 +104,10 @@ class ManagedFile():
             # Open a new file if this write will exceed the max size
             if self.file.tell() + len(data) > self.maxsize:
                 self.start_file()
-            self.file.write(data)
+            if isinstance(data, str):
+                self.file.write(data.encode())
+            else:
+                self.file.write(data)
 
     def get_storage_status(self):
         return get_storage_status(self.device)
