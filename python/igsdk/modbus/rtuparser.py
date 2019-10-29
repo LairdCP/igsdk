@@ -2,8 +2,8 @@
 # rtuparser.py
 #
 
-from baseparser import ModbusBaseParser
-from message import ModbusMessage
+from .baseparser import ModbusBaseParser
+from .message import ModbusMessage
 import logging
 import time
 import struct
@@ -168,7 +168,7 @@ class ModbusRTUParser(ModbusBaseParser):
         remaining bytes are discared and all parsed messages are returned.
         """
         msgs = []
-        d = struct.unpack('{:X}B'.format(len(b)), b)
+        d = struct.unpack('{}B'.format(len(b)), b)
         msg, rem = self._try_parse_unknown(d)
         while msg:
             msgs.append(msg)

@@ -22,6 +22,8 @@ All messages **must** contain an `address` element, which is an unsigned integer
 
 All messages **must** contain a `function` element, which is an unsigned integer that represents the 8-bit Modbus function code.
 
+All messages **must** contain a `received` element, which is an unsigned integer that represents the message receive time as milliseconds since the Epoch (1-1-1970).
+
 Messages **may** contain a `data` element, which is an array of unsigned integers that represent the Modbus data payload.  Messages that do not contain a data payload can omit this element.
 
 An example of a JSON message representing a single Modbus message is as follows:
@@ -29,7 +31,8 @@ An example of a JSON message representing a single Modbus message is as follows:
     {
        "address" : 16,
        "function" : 3,
-       "data" : [ 0, 107, 0, 3 ]
+       "data" : [ 0, 107, 0, 3 ],
+       "received": 1568921373505
     }
 
 This represents a Modbus master request to read 3 holding registers, beginning at address 107, from the slave with device ID 16.

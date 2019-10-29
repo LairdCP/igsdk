@@ -195,7 +195,7 @@ def write_bits(state, addr, new_data, nbits):
         new_el = copy.deepcopy(el)
         curbit = 0
         for i in range(offset, offset + nbits):
-            new_el[i] = (new_data[(curbit + 1) / 8] >> (curbit % 8)) & 0x01
+            new_el[i] = (new_data[curbit / 8] >> (curbit % 8)) & 0x01
             curbit = curbit + 1
         delta = {addr: new_el}
         return delta

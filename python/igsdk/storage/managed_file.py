@@ -5,7 +5,7 @@
 # writing to internal vs. external storage, limited file size,
 # and sequenced filenames.)
 #
-from .. import device
+from ..device import device_init, device_deinit, get_int_storage_path, get_ext_storage_available, get_storage_status, EXT_STORAGE_AVAILABLE
 import threading
 import datetime
 import os
@@ -29,7 +29,8 @@ class FileMover(threading.Thread):
             if os.path.isfile(srcname):
                 dstname = self.dstpath + '/' + fname
                 self.logger.info('Moving {} -> {}'.format(srcname, dstname))
-                shutil.move(srcname, self.dstpath + '/' + fname)
+                shutil.copyfile(srcname, dstname)
+                os.remove(srcname)
         self.logger.info('File move complete.')
 
 class ManagedFile():
@@ -43,9 +44,9 @@ class ManagedFile():
     """
     def __init__(self, unit, basename, suffix, maxsize):
         self.logger = logging.getLogger(__name__)
-        self.device = device.device_init(self.cb_ext_storage_available)
-        self.int_storage_path = device.get_int_storage_path(self.device)
-        self.ext_storage_available, self.ext_storage_path = device.get_ext_storage_available(self.device)
+        self.device = device_init(self.cb_ext_storage_available)
+        self.int_storage_path = get_int_storage_path(self.device)
+        self.ext_storage_available, self.ext_storage_path = get_ext_storage_available(self.device)
         self.flock = threading.RLock()
         self.file = None
         self.filename = None
@@ -62,7 +63,7 @@ class ManagedFile():
             if self.file and not self.file.closed:
                 self.file.close()
                 self.file = None
-        device.device_deinit(self.device)
+        device_deinit(self.device)
 
     def cb_ext_storage_available(self, ext_storage_available, ext_storage_path):
         """Callback indicating change in external storage availability
@@ -73,7 +74,7 @@ class ManagedFile():
                 self.ext_storage_path = ext_storage_path
                 # Open a new file based on the storage availabillity
                 self.start_file()
-                if self.ext_storage_available == device.EXT_STORAGE_AVAILABLE:
+                if self.ext_storage_available == EXT_STORAGE_AVAILABLE:
                     # Create thread to move files to external storage
                     self.filemover = FileMover(self.int_storage_path + '/' + self.unit,
                         self.ext_storage_path + '/' + self.unit)
@@ -86,7 +87,7 @@ class ManagedFile():
                 self.file.close()
                 self.file = None
             # Create path to file if necessary
-            if self.ext_storage_available == device.EXT_STORAGE_AVAILABLE:
+            if self.ext_storage_available == EXT_STORAGE_AVAILABLE:
                 self.basepath = self.ext_storage_path + '/' + self.unit
             else:
                 self.basepath = self.int_storage_path + '/' + self.unit
@@ -103,10 +104,13 @@ class ManagedFile():
             # Open a new file if this write will exceed the max size
             if self.file.tell() + len(data) > self.maxsize:
                 self.start_file()
-            self.file.write(data)
+            if isinstance(data, str):
+                self.file.write(data.encode())
+            else:
+                self.file.write(data)
 
     def get_storage_status(self):
-        return device.get_storage_status(self.device)
+        return get_storage_status(self.device)
 
 def managed_file_init(unit, basename, suffix, maxsize = MANAGED_FILE_MAX_SIZE_DEFAULT):
     """Initializes a managed file for storage.

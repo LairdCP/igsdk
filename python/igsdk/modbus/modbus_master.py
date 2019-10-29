@@ -2,8 +2,8 @@
 # modbus_master
 #
 
-from message import ModbusMessage
-from modbus_queue import ModbusQueue
+from .message import ModbusMessage
+from .modbus_queue import ModbusQueue
 import logging
 import time
 

@@ -3,9 +3,9 @@
 #
 
 import threading
-from message import ModbusMessage
-from modbus_queue import ModbusQueue
-from state_util import read_registers, read_bits, write_registers, write_bits, mask_write_register
+from .message import ModbusMessage
+from .modbus_queue import ModbusQueue
+from .state_util import read_registers, read_bits, write_registers, write_bits, mask_write_register
 import logging
 
 class ModbusSlave(threading.Thread):
@@ -159,7 +159,7 @@ class ModbusSlave(threading.Thread):
             delta = write_bits(state, addr, new_data, nbits)
             if delta:
                 self.set_write_state(key, delta)
-                return req_data
+                return req_data[:4]
 
     def handle_request(self, req):
         """Handle a single Modbus message request message; returns a response Modbus message.
