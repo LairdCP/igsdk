@@ -111,6 +111,8 @@ class SerialQueue(threading.Thread):
     data to a calling thread.  The received data is framed by timeouts, and
     stored as byte strings in a queue.
     """
+    DEFAULT_BREAK_DURATION = 0.25
+
     def __init__(self, port, baudrate, serial_mode=0, serial_term=0, timeout=None, inter_byte_timeout=0.1, read_buf_size=1024, max_queue_size=256):
         self.serial = SerialTimeoutFix(port=port, baudrate=baudrate, timeout=timeout, inter_byte_timeout=inter_byte_timeout)
         self.queue = Queue.Queue(maxsize=max_queue_size)
@@ -173,7 +175,10 @@ class SerialQueue(threading.Thread):
         except Queue.Empty:
             self.logger.debug('Queue is empty.')
         return msg
-        
+
+    def await_cancel(self):
+        self.queue.put_nowait(None)
+
     def send_msg(self, msg):
         """Send a message on the serial port.
         """
@@ -188,3 +193,6 @@ class SerialQueue(threading.Thread):
                 self.queue.get(False)
         except Queue.Empty:
             pass
+
+    def send_break(self, duration = DEFAULT_BREAK_DURATION):
+        self.serial.send_break(duration)

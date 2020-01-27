@@ -11,3 +11,7 @@ Serial and Modbus support modules.
 storage
 -------
 Data storage support modules.
+
+bluetooth5
+----------
+Support for Bluetooth 5 hardware (embedded BL654).
