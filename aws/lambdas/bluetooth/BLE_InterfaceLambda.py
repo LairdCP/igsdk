@@ -28,7 +28,7 @@ import greengrasssdk
 import logging
 import os
 import json
-import time
+from time import time
 from igsdk.bt_module import bt_init, bt_start_discovery, bt_stop_discovery, bt_connect, bt_disconnect, bt_device_services, bt_read_characteristic, bt_write_characteristic, bt_config_characteristic_notification
 
 node_id = os.getenv('AWS_IOT_THING_NAME') or 'NO_THING_NAME'
@@ -59,6 +59,7 @@ def discovery_callback(path, interfaces):
 			for key in properties.keys():
 				if key in discovery_keys:
 					data[key] = properties[key]
+			data['timestamp'] = int(time())
 			data_json = json.dumps(data, separators=(',',':'), sort_keys=True, indent=4)
 			client.publish(topic=discovery_topic, payload=data_json)
 
@@ -74,6 +75,7 @@ def connection_callback(data):
 		device_services = bt_device_services(bt, data['address'])
 		data['services'] = device_services['services']
 
+	data['timestamp'] = int(time())
 	data_json = json.dumps(data, separators=(',',':'), sort_keys=True, indent=4)
 	client.publish(topic=connect_topic, payload=data_json)
 
@@ -82,6 +84,7 @@ def write_notification_callback(data):
 	A callback that receives notifications on write operations to device
 	characteristics and publishes the notification data to the 'gatt' topic
 	"""
+	data['timestamp'] = int(time())
 	data_json = json.dumps(data, separators=(',',':'), indent=4)
 	client.publish(topic=char_topic, payload=data_json)
 
@@ -94,7 +97,7 @@ def characteristic_property_change_callback(data):
 	# Convert the changed value to hex
 	temp = data['value']
 	data['value'] = ''.join('{:02x}'.format(x) for x in temp)
-
+	data['timestamp'] = int(time())
 	data_json = json.dumps(data, separators=(',',':'), indent=4)
 	client.publish(topic=char_topic, payload=data_json)
 

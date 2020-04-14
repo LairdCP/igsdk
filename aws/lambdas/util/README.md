@@ -31,3 +31,12 @@ Reboot.py implements a Lambda function in Python that enables rebooting of the I
 
 where `nodeid` is the ID of the Greengrass core>.
 
+## ConnectLTE
+ConnectLTE.py implements a Lambda function in Python that allows the creation and activation of an LTE connection, modifying the priority of the LTE connection, and updating multipe Wi-Fi configs. Once deployed, ConnectLTE will perform an these functions when  a message is received on the following topics:
+
+    device/<nodeid>/connectLTE
+    device/<nodeid>/updateAPS
+
+where `nodeid` is the ID of the Greengrass core>.
+
+

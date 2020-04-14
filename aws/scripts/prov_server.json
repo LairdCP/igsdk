@@ -35,6 +35,25 @@
                     "Id": "MyPolicy",
                     "Version": "2012-10-17",
                     "Statement": [
+			{
+			    "Sid": "ListWholebucket",
+			    "Effect": "Allow",
+			    "Principal": {
+				"CanonicalUser" : { "Fn::GetAtt" : [ "CloudFrontOriginAccessIdentity", "S3CanonicalUserId" ] }
+			    },
+			    "Action": "s3:ListBucket",
+			    "Resource": {
+				"Fn::Join": [
+				    "",
+				    [
+					"arn:aws:s3:::",
+					{
+					    "Ref": "S3Bucket"
+					}
+				    ]
+				]
+			    }
+			},
                         {
                             "Sid": "CloudFrontReadAccess",
                             "Effect": "Allow",
@@ -108,13 +127,13 @@
                         "};"
                     ]]}
                 },
-                "Runtime": "nodejs8.10"
+                "Runtime": "nodejs10.x"
             }
         },
         "BasicAuthEdgeLambdaVersion" : {
             "Type": "AWS::Lambda::Version",
             "Properties": {
-                "FunctionName": { "Fn::GetAtt": [ "BasicAuthEdgeLambda", "Arn" ] },
+                "FunctionName": { "Fn::GetAtt": [ "BasicAuthEdgeLambda", "Arn" ] }
             }
         },
         "CloudFrontDistribution" : {
