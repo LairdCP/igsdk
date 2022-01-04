@@ -16,10 +16,11 @@ import logging
 MANAGED_FILE_MAX_SIZE_DEFAULT = (64 * 1024 * 1024) # 64 MB
 
 class FileMover(threading.Thread):
-    def __init__(self, srcpath, dstpath):
+    def __init__(self, srcpath, dstpath, filemove_status_callback = None):
         self.logger = logging.getLogger(__name__)
         self.srcpath = srcpath
         self.dstpath = dstpath
+        self.filemove_status_callback = filemove_status_callback
         super(FileMover, self).__init__()
 
     def run(self):
@@ -32,6 +33,8 @@ class FileMover(threading.Thread):
                 shutil.copyfile(srcname, dstname)
                 os.remove(srcname)
         self.logger.info('File move complete.')
+        if self.filemove_status_callback is not None:
+            self.filemove_status_callback(srcname)
 
 class ManagedFile():
     """
@@ -42,8 +45,10 @@ class ManagedFile():
     files to external storage when available, and limits file
     size by writing to a sequence of files.
     """
-    def __init__(self, unit, basename, suffix, maxsize):
+    def __init__(self, unit, basename, suffix, maxsize, extstorage_status_callback = None, filemove_status_callback = None):
         self.logger = logging.getLogger(__name__)
+        self.extstorage_status_callback = extstorage_status_callback
+        self.filemove_status_callback = filemove_status_callback
         self.device = device_init(self.cb_ext_storage_available)
         self.int_storage_path = get_int_storage_path(self.device)
         self.ext_storage_available, self.ext_storage_path = get_ext_storage_available(self.device)
@@ -58,6 +63,10 @@ class ManagedFile():
         self.filemover = None
         self.start_file()
 
+        # Run main loop if using callback
+        self.start()
+
+
     def deinit(self):
         with self.flock:
             if self.file and not self.file.closed:
@@ -70,6 +79,8 @@ class ManagedFile():
         """
         with self.flock:
             if ext_storage_available != self.ext_storage_available:
+                if self.extstorage_status_callback is not None:
+                    self.extstorage_status_callback(ext_storage_available)
                 self.ext_storage_available = ext_storage_available
                 self.ext_storage_path = ext_storage_path
                 # Open a new file based on the storage availabillity
@@ -77,7 +88,7 @@ class ManagedFile():
                 if self.ext_storage_available == EXT_STORAGE_AVAILABLE:
                     # Create thread to move files to external storage
                     self.filemover = FileMover(self.int_storage_path + '/' + self.unit,
-                        self.ext_storage_path + '/' + self.unit)
+                        self.ext_storage_path + '/' + self.unit, self.filemove_status_callback)
                     self.filemover.start()
 
     def start_file(self):
@@ -112,10 +123,11 @@ class ManagedFile():
     def get_storage_status(self):
         return get_storage_status(self.device)
 
-def managed_file_init(unit, basename, suffix, maxsize = MANAGED_FILE_MAX_SIZE_DEFAULT):
+def managed_file_init(unit, basename, suffix, maxsize = MANAGED_FILE_MAX_SIZE_DEFAULT, extstorage_status_callback = None,
+        filemove_status_callback = None):
     """Initializes a managed file for storage.
     """
-    return ManagedFile(unit, basename, suffix, maxsize)
+    return ManagedFile(unit, basename, suffix, maxsize, extstorage_status_callback, filemove_status_callback)
 
 def managed_file_deinit(f):
     if f:

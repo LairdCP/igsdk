@@ -42,7 +42,7 @@ class ProvManager(threading.Thread):
     """
     Class that encapsulates the prov API functionality
     """
-    def __init__(self):
+    def __init__(self, provisioning_status_callback = None):
         self.logger = logging.getLogger(__name__)
         self.loop = None
 
@@ -63,6 +63,9 @@ class ProvManager(threading.Thread):
 
         self.logger.info('Prov Manager starting.')
         super(ProvManager, self).__init__()
+
+        # Save custom callbacks with the client
+        self.provisioning_status_callback = provisioning_status_callback
         # Run main loop if using callback
         self.start()
 
@@ -101,10 +104,16 @@ class ProvManager(threading.Thread):
             self.logger.info('Provisioning State: Failed Bad Config')
         else:
             self.logger.info('Provisioning Failed')
+        if self.provisioning_status_callback is not None:
+            self.provisioning_status_callback(state)
 
     def start_core_download(self, data):
         """
-        Start a download of the green grass core, but wait to apply the
+        Start a download of the green grass core, but wait to apply it
+        The data dictionary fields include
+        "url" : "http link to JSON Descriptor of Greengrass Core tarball"
+        "username" : "username to access JSON Descriptor"
+        "password" : "password to access JSON Descriptor"
         """
         self.logger.info('Starting the core download')
         data = json.loads(data)

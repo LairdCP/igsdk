@@ -20,6 +20,7 @@ import logging
 import os
 import json
 from igsdk.storage.managed_file import managed_file_init, managed_file_write, get_storage_status
+from time import time
 
 node_id = os.getenv('AWS_IOT_THING_NAME') or 'NO_THING_NAME'
 
@@ -32,6 +33,33 @@ log_level = int(os.getenv('MODBUS_LOG_LEVEL') or '20') # 20 = 'logging.INFO'
 
 # Managed file handle
 hfile = None
+
+char_topic = 'storage/status/{}/status'.format(node_id)
+filemove_topic = 'storage/status/{}/move'.format(node_id)
+
+def extstorage_status_callback(data):
+    """
+    A callback that publishes status to topic
+    when external storage is present
+    """
+    logging.info('extstorage_status_callback')
+    status = {}
+    status['extstorage_status'] = int(data)
+    status['timestamp'] = int(time())
+    data_json = json.dumps(status, separators=(',',':'), indent=4)
+    client.publish(topic=char_topic, payload=data_json)
+
+def filemove_status_callback(data):
+    """
+    A callback that publishes status to topic
+    when file is moved
+    """
+    logging.info('filemove_status_callback')
+    status = {}
+    status['source_filename'] = data
+    status['timestamp'] = int(time())
+    data_json = json.dumps(status, separators=(',',':'), indent=4)
+    client.publish(topic=filemove_topic, payload=data_json)
 
 #
 # This handler receives all incoming messages (based on the topic subscription
@@ -70,4 +98,4 @@ client = greengrasssdk.client('iot-data')
 # Initialize the managed file
 logging.info('Starting text file storage: unit={}, basename={}, ext={}, maxsize={}'.format(
     unit_name, base_name, file_ext, max_file_size))
-hfile = managed_file_init(unit_name, base_name, file_ext, max_file_size)
+hfile = managed_file_init(unit_name, base_name, file_ext, max_file_size, extstorage_status_callback, filemove_status_callback)

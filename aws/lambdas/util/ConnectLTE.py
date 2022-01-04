@@ -7,8 +7,23 @@ import logging
 import os
 import igsdk.config
 import json
+from time import time
 
 node_id = os.getenv('AWS_IOT_THING_NAME') or 'NO_THING_NAME'
+
+char_topic = 'connect_lte/{}/status'.format(node_id)
+
+def lte_status_callback(data):
+    """
+    A callback that publishes status to topic
+    when lte connection status is returned
+    """
+    logging.info('lte_status_callback')
+    status = {}
+    status['lte_status'] = int(data)
+    status['timestamp'] = int(time())
+    data_json = json.dumps(status, separators=(',',':'), indent=4)
+    client.publish(topic=char_topic, payload=data_json)
 
 #
 # This handler receives all incoming messages (based on the topic subscription
@@ -40,6 +55,6 @@ logging.getLogger().setLevel(logging.INFO)
 client = greengrasssdk.client('iot-data')
 # Initialize the IGSDK config module
 logging.info('Starting Config API lambda.')
-config_manager = igsdk.config.ConfigManager()
+config_manager = igsdk.config.ConfigManager(lte_status_callback)
 
 

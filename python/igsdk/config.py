@@ -43,9 +43,11 @@ AP_SCANNING = 1
 class ConfigManager(threading.Thread):
     """Class that encapsulates the config API functionality
     """
-    def __init__(self):
+    def __init__(self,  lte_status_callback = None):
         self.logger = logging.getLogger(__name__)
         self.loop = None
+
+        self.lte_status_callback = lte_status_callback
 
         # Set up DBus loop
         dbus.mainloop.glib.threads_init()
@@ -86,6 +88,9 @@ class ConfigManager(threading.Thread):
             self.logger.info('Activation pending')
         else:
             self.logger.info('Activation failed')
+        # callback return the activation status
+        if self.lte_status_callback is not None:
+            self.lte_status_callback(status)
 
     def connect_lte(self, config):
         """Send a command to the config service to initiate an LTE Connection

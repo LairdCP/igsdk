@@ -39,4 +39,15 @@ ConnectLTE.py implements a Lambda function in Python that allows the creation an
 
 where `nodeid` is the ID of the Greengrass core>.
 
+## UpdateCore
+UpdateCore.py implements a Lambda function in Python that allows downloading and updating a new Greengrass core version.
+UpdateCore will perform downloading when message containing "url":"<http link to JSON Descriptor of Greengrass Core tarball>", "username":"<username>" and "password":"<password>" is recieved on topic:
+
+    prov/<nodeid>/startCoreDownload
+
+UpdateCore will perform updating when any message is received on topic:
+
+    prov/<modeid>/performCoreUpdate
+
+where `nodeid` is the ID of the Greengrass core>.
 
