@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # IG60 Update Script for EdgeIQ
 #
@@ -15,17 +15,17 @@ KEYFILE=/etc/ssl/misc/dev.crt
 UPDATEFILE=$1
 
 cleanup_and_fail(){
-    echo $1
-    umount ${MOUNT_POINT} 2>&1 >/dev/null || true
-    rm -f ${UPDATEFILE}
+    echo "$1"
+    umount ${MOUNT_POINT} >/dev/null 2>&1 || true
+    rm -f "${UPDATEFILE}"
     exit 1
 }
 
 # Read the configured bootside and actual root filesystem partition in use
-BOOTSIDE=`fw_printenv -n bootside` || cleanup_and_fail "Cannot read bootside"
-CURRENTROOT=`sed -rn 's/.*(ubiblock0_[0-9]).*/\1/p' /proc/cmdline` || cleanup_and_fail "Cannot read current rootfs"
+BOOTSIDE=$(fw_printenv -n bootside) || cleanup_and_fail "Cannot read bootside"
+CURRENTROOT=$(sed -rn 's/.*(ubiblock0_[0-9]).*/\1/p' /proc/cmdline) || cleanup_and_fail "Cannot read current rootfs"
 
-if [ ${BOOTSIDE} == "a" ]; then
+if [ "${BOOTSIDE}" = "a" ]; then
     UPDATESIDE="b"
     MIGRATE_DEVICE="/dev/ubi0_5"
     EXPECTEDROOT="ubiblock0_1"
@@ -38,39 +38,42 @@ fi
 # Sanity check that the mounted rootfs matches the bootside; this
 # prevents applying an update again before a reboot (which can
 # lead to an unbootable filesystem!)
-if [ ${CURRENTROOT} != ${EXPECTEDROOT} ]; then cleanup_and_fail "Inconsistent boot sides"; fi
+if [ "${CURRENTROOT}" != "${EXPECTEDROOT}" ]; then cleanup_and_fail "Inconsistent boot sides"; fi
 
-UPDATETAG=`fw_printenv -n fwkey` || UPDATETAG='stable'
+# Set update tag if a different bootloader key was assigned in manufacturing.
+# NOTE: Newer versions of fw_printenv return empty strings when variable is undefined
+UPDATETAG=$(fw_printenv -n fwkey) || UPDATETAG='stable'
+if [ -z "${UPDATETAG}" ]; then UPDATETAG="stable"; fi
 UPDATESEL="${UPDATETAG},main-${UPDATESIDE}"
 
 # Apply update
 echo "Applying update ${UPDATESEL} from ${UPDATEFILE}"
-swupdate -b "2 3" -l 4 -v -i ${UPDATEFILE} -e ${UPDATESEL} -k ${KEYFILE} || cleanup_and_fail "Failed to perform swupdate"
+swupdate -b "2 3" -l 4 -v -i "${UPDATEFILE}" -e "${UPDATESEL}" -k "${KEYFILE}" || cleanup_and_fail "Failed to perform swupdate"
 
 # Create mount point and mount the data device
-mkdir -p ${MOUNT_POINT} || cleanup_and_fail "Failed to create ${MOUNT_POINT}"
-mount -o noatime -t ubifs ${MIGRATE_DEVICE} ${MOUNT_POINT} || "Failed to mount ${MIGRATE_DEVICE}"
+mkdir -p "${MOUNT_POINT}" || cleanup_and_fail "Failed to create ${MOUNT_POINT}"
+mount -o noatime -t ubifs "${MIGRATE_DEVICE}" "${MOUNT_POINT}" || "Failed to mount ${MIGRATE_DEVICE}"
 
 # Wipe data patition
-rm -rf ${MOUNT_POINT}/* || cleanup_and_fail "Cannot erase ${MOUNT_POINT}"
+rm -rf "${MOUNT_POINT:?}"/* || cleanup_and_fail "Cannot erase ${MOUNT_POINT}"
 
 # Make sure the encryption key is available
 keyctl link "@us" "@s" || cleanup_and_fail "Cannot obtain encryption key"
 
 # Create encrypted directory and sync encrypted data
-mkdir -p ${DATA_SECRET} || cleanup_and_fail "Cannot create ${DATA_SECRET}"
-fscryptctl set_policy ${FSCRYPT_KEY} ${DATA_SECRET} || cleanup_and_fail "Cannot enable encryption"
-rsync -rlptDW --exclude=.mounted /data/secret/ ${DATA_SECRET} || cleanup_and_fail "Cannot sync to ${DATA_SECRET}"
+mkdir -p "${DATA_SECRET}" || cleanup_and_fail "Cannot create ${DATA_SECRET}"
+fscryptctl set_policy "${FSCRYPT_KEY}" "${DATA_SECRET}" || cleanup_and_fail "Cannot enable encryption"
+rsync -rlptDW --exclude=.mounted /data/secret/ "${DATA_SECRET}" || cleanup_and_fail "Cannot sync to ${DATA_SECRET}"
 
 # Migrate public data
-mkdir -p ${DATA_PUBLIC} || cleanup_and_fail "Cannot create ${DATA_PUBLIC}"
-rsync -rlptDW /data/public/ ${DATA_PUBLIC} || cleanup_and_fail "Cannot sync to ${DATA_PUBLIC}"
-umount ${MOUNT_POINT} || cleanup_and_fail "Cannot unmount ${MOUNT_POINT}"
+mkdir -p "${DATA_PUBLIC}" || cleanup_and_fail "Cannot create ${DATA_PUBLIC}"
+rsync -rlptDW /data/public/ "${DATA_PUBLIC}" || cleanup_and_fail "Cannot sync to ${DATA_PUBLIC}"
+umount "${MOUNT_POINT}" || cleanup_and_fail "Cannot unmount ${MOUNT_POINT}"
 
 # Change the bootside
-fw_setenv bootside ${UPDATESIDE} || cleanup_and_fail "Cannot set bootside"
+fw_setenv bootside "${UPDATESIDE}" || cleanup_and_fail "Cannot set bootside"
 
 # Delete the update file to save space
-rm -f ${UPDATEFILE}
+rm -f "${UPDATEFILE}"
 
 exit 0
